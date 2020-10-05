@@ -15,4 +15,4 @@ jobs:
 
     steps:
     - name: Hacer el paso 1
-      run: echo "::debug::Mensaje de debug desde el paso 1"
+      run: echo "::warning::Mensaje de warning desde el paso 1"
