@@ -3,15 +3,16 @@
 Use this utility to edit the screens of the video game H.E.R.O. for MSX.
 
 ```
-usage: heroed [-h] romfile
+usage: heroed [-h] [-v] romfile
 
 HEROED - MSX H.E.R.O. Editor
 
 positional arguments:
-  romfile     The MSX H.E.R.O. ROM file to edit
+  romfile        The MSX H.E.R.O. ROM file to edit
 
 optional arguments:
-  -h, --help  show this help message and exit
+  -h, --help     show this help message and exit
+  -v, --version  show program's version number and exit
 ```
 
 Press `H` in the editor to show some help screens and learn the controls and
