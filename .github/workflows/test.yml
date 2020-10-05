@@ -1,0 +1,18 @@
+# This workflow will install Python dependencies and bundle using Pyinstaller with a single version of Python
+
+name: Test
+
+#on:
+#  release:
+#    types: [edited]
+
+on: [workflow_dispatch]
+
+jobs:
+  first_job:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Hacer el paso 1
+      run: echo "::debug::Mensaje de debug desde el paso 1"
