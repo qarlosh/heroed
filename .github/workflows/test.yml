@@ -2,11 +2,9 @@
 
 name: Test
 
-#on:
-#  release:
-#    types: [edited]
-
-on: [workflow_dispatch]
+on:
+  release:
+    types: [edited]
 
 jobs:
   first_job:
@@ -15,4 +13,4 @@ jobs:
 
     steps:
     - name: Hacer el paso 1
-      run: echo "::warning::Mensaje de warning desde el paso 1"
+      run: echo "::warning::Se ha modificado una release!"
