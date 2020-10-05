@@ -9,15 +9,15 @@ byte      The byte used to store the data in the ROM
 The middle area and the lower area are represented the same way.
 """
 from heroed.utils import clamp
-import heroed.hero
+from heroed import hero
 from heroed.ui.cursor import Cursor
 
 _IN_ATTRIBUTES = 0xFF
 _cursor_values = (
-    heroed.hero.BYTE_LANTERN,
-    heroed.hero.BYTE_WALL,
-    heroed.hero.BYTE_ENEMY_MID,
-    heroed.hero.BYTE_ENEMY_LOW,
+    hero.BYTE_LANTERN,
+    hero.BYTE_WALL,
+    hero.BYTE_ENEMY_MID,
+    hero.BYTE_ENEMY_LOW,
     _IN_ATTRIBUTES,
 )
 

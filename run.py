@@ -1,3 +1,3 @@
-from heroed import main
+from heroed import main_editor
 
-main()
+main_editor()

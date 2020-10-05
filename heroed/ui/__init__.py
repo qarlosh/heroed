@@ -647,7 +647,7 @@ class UI:
             flush=True,
         )
         print(
-            self.term.move_left(max_length - len(default))
+            self.term.move_left(max_length - len(default) + 1)
             + self.term.normal_cursor,
             end="",
             flush=True,
@@ -659,7 +659,7 @@ class UI:
                 if k.code == self.term.KEY_ENTER:
                     return keys  # finish input
                 elif k.code == self.term.KEY_ESCAPE:
-                    return ""  # cancel
+                    return default # cancel
                 elif k.code == self.term.KEY_BACKSPACE:
                     # erase last char
                     if len(keys) > 0:
@@ -669,7 +669,7 @@ class UI:
                             end="",
                             flush=True,
                         )
-                else:
+                elif not k.is_sequence:
                     if len(keys) < max_length:
                         print(k, end="", flush=True)
                         keys += k  # add input
@@ -684,3 +684,4 @@ class UI:
         with self.term.fullscreen(), self.term.cbreak(), self.term.hidden_cursor():
             self.redraw_all()
             yield self
+            print(self.term.white_on_black)
