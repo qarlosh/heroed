@@ -17,6 +17,8 @@ optional arguments:
 Press `H` in the editor to show some help screens and learn the controls and
 what can you edit.
 
+![screenshot](https://user-images.githubusercontent.com/15140125/95097983-65a2f300-072e-11eb-9c1e-c9cf4628a1c3.png)
+
 
 ## TODO:
 - Allow change terrain and water colors (modify the 4 charsets).
