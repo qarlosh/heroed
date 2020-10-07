@@ -216,6 +216,90 @@ class Editor:
 
     def is_layout_modified(self):
         return self._level_layout_modified
-    
+
     def are_there_modifications(self):
         return self.are_there_modified_screens() or self.is_layout_modified()
+
+    def define_current_screen_as_initial(self):
+        """define the current screen as the initial screen of the level."""
+        final_screens = hero.final_screens(
+            self.level_initial_screens, self.level_screen_count
+        )
+
+        # Don't allow setting the same screen as initial and final
+        if self.selected_screen in final_screens:
+            return False
+
+        search_screen = self.selected_screen
+        while search_screen <= 255:
+            level, _ = hero.get_levelscr_from_absscr(
+                search_screen,
+                self.level_initial_screens,
+                self.level_screen_count,
+            )
+            # If the current screen is "lost", then search from
+            # a posterior screen
+            if level is None:
+                search_screen += 1
+            else:
+                break
+
+        # if the level is not found, return
+        if level is None:
+            return False
+
+        # set the initial screen and current length
+        # final_screen = final_screens[level - 1]
+
+        # set level initial screen
+        level_initial_screens = list(self.level_initial_screens)
+        level_initial_screens[level - 1] = self.selected_screen
+        self.level_initial_screens = tuple(level_initial_screens)
+
+        # calculate the new screen count for the level
+        # screen_count = final_screen - self.selected_screen + 1
+        screen_count = final_screens[level - 1] - self.selected_screen + 1
+
+        # set level length
+        level_screen_count = list(self.level_screen_count)
+        level_screen_count[level - 1] = screen_count
+        self.level_screen_count = tuple(level_screen_count)
+
+        return True
+
+    def define_current_screen_as_final(self):
+        """define the current screen as the final screen of the level."""
+
+        # Don't allow setting the same screen as initial and final
+        if self.selected_screen in self.level_initial_screens:
+            return False
+
+        search_screen = self.selected_screen
+        while search_screen >= 0:
+            level, _ = hero.get_levelscr_from_absscr(
+                search_screen,
+                self.level_initial_screens,
+                self.level_screen_count,
+            )
+            # If the current screen is "lost", then search from
+            # a previous screen
+            if level is None:
+                search_screen -= 1
+            else:
+                break
+
+        # if the level is not found, return
+        if level is None:
+            return False
+
+        # calculate the new screen count for the level
+        screen_count = (
+            self.selected_screen - self.level_initial_screens[level - 1] + 1
+        )
+
+        # set level length
+        level_screen_count = list(self.level_screen_count)
+        level_screen_count[level - 1] = screen_count
+        self.level_screen_count = tuple(level_screen_count)
+
+        return True

@@ -110,9 +110,9 @@ def main_editor():
             elif keystroke.lower() == "h":
                 ui.show_help()
 
-            elif keystroke.lower() == "d":
-                ui.show_screen_data = not ui.show_screen_data
-                ui.draw_screen_data()
+            #elif keystroke.lower() == "d":
+            #    ui.show_screen_data = not ui.show_screen_data
+            #    ui.draw_screen_data()
 
             elif keystroke.lower() == "n":
                 # Modify the name of the mod
@@ -128,70 +128,8 @@ def main_editor():
                 )
                 ui.draw_mod_name()
 
-            elif keystroke.lower() == "t":
-                print(hero.final_screens())
-
             elif keystroke.lower() == "z":
-                # define the current screen as the initial screen of the level.
-                search_screen = editor.selected_screen
-                while search_screen <= 255:
-                    level, _ = hero.get_levelscr_from_absscr(
-                        search_screen,
-                        editor.level_initial_screens,
-                        editor.level_screen_count,
-                    )
-                    # If the current screen is "lost", then search from
-                    # a posterior screen
-                    if level is None:
-                        search_screen += 1
-                    else:
-                        break
-
-                # if found the level, set the initial screen and current length
-                if level is not None:
-                    final_screen = hero.final_screens(
-                        editor.level_initial_screens, editor.level_screen_count
-                    )[level - 1]
-
-                    # set level initial screen
-                    level_initial_screens = list(editor.level_initial_screens)
-                    level_initial_screens[level - 1] = editor.selected_screen
-                    editor.level_initial_screens = level_initial_screens
-
-                    # calculate the new screen count for the level
-                    screen_count = final_screen - editor.selected_screen + 1
-
-                    # set level length
-                    level_screen_count = list(editor.level_screen_count)
-                    level_screen_count[level - 1] = screen_count
-                    editor.level_screen_count = level_screen_count
+                editor.define_current_screen_as_initial()
 
             elif keystroke.lower() == "x":
-                # define the current screen as the final screen of the level.
-                search_screen = editor.selected_screen
-                while search_screen >= 0:
-                    level, _ = hero.get_levelscr_from_absscr(
-                        search_screen,
-                        editor.level_initial_screens,
-                        editor.level_screen_count,
-                    )
-                    # If the current screen is "lost", then search from
-                    # a previous screen
-                    if level is None:
-                        search_screen -= 1
-                    else:
-                        break
-
-                # if found the level, set the current length
-                if level is not None:
-                    # calculate the new screen count for the level
-                    screen_count = (
-                        editor.selected_screen
-                        - editor.level_initial_screens[level - 1]
-                        + 1
-                    )
-
-                    # set level length
-                    level_screen_count = list(editor.level_screen_count)
-                    level_screen_count[level - 1] = screen_count
-                    editor.level_screen_count = level_screen_count
+                editor.define_current_screen_as_final()

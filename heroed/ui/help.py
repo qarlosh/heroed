@@ -14,7 +14,7 @@ def draw_help_1(term, **kwargs):
             """\
 
 
-Use this utility to edit the screens of the video game H.E.R.O. for MSX.
+Use this utility to edit the levels of the video game H.E.R.O. for MSX.
 
 The game has 20 levels, each one with a different number of screens, for a
 total amount of 256 screens.
@@ -30,6 +30,10 @@ The objects can be moved horizontally or hidden.
 
 The default screen flow is to enter from above and to exit from below. You can
 open a gap to the left or right side of a screen to enable a horizontal flow.
+
+You can also set which is the first screen and which is the final one on each
+level, so you can change the length of the levels. But there always have to be
+20 levels, and you can use a maximum of 256 screens for all of them.
         """
         )
 
@@ -43,19 +47,22 @@ CONTROLS
   PAGE UP           Previous screen
   PAGE DOWN         Next screen
   HOME              First screen (0)
-  END               Las screen (355)
-  NUMBERS           Enter a sequence of 1 or 2 numbers, and optionally end with
-                    ENTER, to go to the first screen of the entered level (1 to
-                    20)
+  END               Last screen (255)
+  0..9              Enter a sequence of one or two numbers, and optionally end
+                    with ENTER, to go to the first screen of the entered level
+                    (1 to 20)
   TAB               Switch between TERRAIN or OBJECT editing modes
   DIRECTION KEYS    move the terrain cursor, the selected object or select an
                     attribute
   SPACE BAR         Edit terrain, change the selected enemy type, or change an
                     attribute value
+  Z                 Set the initial screen of the current level (or the next
+                    one, if the current screen does not belong to any level)
+  X                 Set the final screen of the current level (or the previous
+                    one, if the current screen does not belong to any level)
   S                 Save (overwrite current ROM file)
   N                 Change the MOD name
   H                 Show this help
-  D                 Show/hide the 8 bytes of the current screen definition
   Q                 Quit
         """
         )
