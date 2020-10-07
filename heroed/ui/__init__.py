@@ -512,6 +512,7 @@ class UI:
 
         # TEST EDITS:
         #   LANTERN REMAINING BITS
+        """
         elif keystroke.lower() == "z":
             new_screen_data = self._screen_data.copy()
             new_screen_data[hero.BYTE_LANTERN] = (
@@ -542,6 +543,7 @@ class UI:
             )
             self.set_screen_data(new_screen_data)
             return None
+        """
         return keystroke
 
     def _lantern_changed(self, old_screen_data, new_screen_data):
