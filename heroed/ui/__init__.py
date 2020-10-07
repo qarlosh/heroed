@@ -113,9 +113,8 @@ class UI:
         self._screen_data = None
         self._prior_screen_data = None
         self._screen_number = None
-        self.screen_number_to_levelscr = tuple(
-            map(hero.get_levelscr_from_absscr, range(256))
-        )
+        self._level_initial_screens = None
+        self._level_screen_count = None
         self.mod_name = ""
         self.version = ""
         self.show_screen_data = False
@@ -132,6 +131,14 @@ class UI:
     @property
     def objects_cursor(self):
         return self.mode_objects.cursor
+
+    @property
+    def level_initial_screens(self):
+        return self._level_initial_screens
+
+    @property
+    def level_screen_count(self):
+        return self._level_screen_count
 
     @mode.setter
     def mode(self, value):
@@ -175,6 +182,11 @@ class UI:
             self.draw_screen(draw_upper_area=True)
     # fmt: on
 
+    def set_level_layout(self, level_initial_screens, level_screen_count):
+        self._level_initial_screens = level_initial_screens
+        self._level_screen_count = level_screen_count
+        self.redraw_all()
+
     def get_attribute_magma(self, screen_data):
         """returns True or False depending on magma is active"""
         return bool(screen_data[hero.BYTE_WALL] & hero.MAGMA_BIT)
@@ -205,7 +217,9 @@ class UI:
         2   right side gap
         3   left side gap
         """
-        wall_pos = heroed.ui.objects.byte_to_position(screen_data[hero.BYTE_WALL])
+        wall_pos = heroed.ui.objects.byte_to_position(
+            screen_data[hero.BYTE_WALL]
+        )
         alt_rightside = bool(
             screen_data[hero.BYTE_WALL] & hero.ALT_RIGHTSIDE_BIT
         )
@@ -227,7 +241,9 @@ class UI:
         3   left side gap (no wall)
         """
         magma_bit = screen_data[hero.BYTE_WALL] & hero.MAGMA_BIT
-        wall_pos = heroed.ui.objects.byte_to_position(screen_data[hero.BYTE_WALL])
+        wall_pos = heroed.ui.objects.byte_to_position(
+            screen_data[hero.BYTE_WALL]
+        )
         if not (4 <= wall_pos <= 35):
             wall_pos = 0
         if value == 0:
@@ -327,33 +343,53 @@ class UI:
                     )
                 return
 
-            if self._screen_number in hero.initial_screens():
+            if self._screen_number in self._level_initial_screens:
                 color = self.term.white_on_blue
-            elif self._screen_number in hero.final_screens():
+            elif self._screen_number in hero.final_screens(
+                self._level_initial_screens, self._level_screen_count
+            ):
                 color = self.term.white_on_red
             else:
                 color = self.term.normal
-            level, levelscr = self.screen_number_to_levelscr[
-                self._screen_number
-            ]
+            level, levelscr = hero.get_levelscr_from_absscr(
+                self._screen_number,
+                self._level_initial_screens,
+                self._level_screen_count,
+            )
             print(
                 self.term.move_xy(pos.x, pos.y)
                 + self.term.normal
                 + "    [%3d]" % self._screen_number,
                 end="",
             )
-            print(
-                self.term.move_xy(pos.x, pos.y + 2)
-                + color
-                + "LEVEL  %2d" % level,
-                end="",
-            )
-            print(
-                self.term.move_xy(pos.x, pos.y + 3)
-                + color
-                + "SCREEN %2d" % levelscr,
-                end="",
-            )
+            if level is None:
+                print(
+                    self.term.move_xy(pos.x, pos.y + 2)
+                    + self.term.magenta_on_black
+                    + "LEVEL  ??",
+                    end="",
+                )
+            else:
+                print(
+                    self.term.move_xy(pos.x, pos.y + 2)
+                    + color
+                    + "LEVEL  %2d" % level,
+                    end="",
+                )
+            if levelscr is None:
+                print(
+                    self.term.move_xy(pos.x, pos.y + 3)
+                    + self.term.magenta_on_black
+                    + "SCREEN ??",
+                    end="",
+                )
+            else:
+                print(
+                    self.term.move_xy(pos.x, pos.y + 3)
+                    + color
+                    + "SCREEN %2d" % levelscr,
+                    end="",
+                )
 
     def draw_selection_mode(self):
         """Draw the active selecion mode, at the top center"""
@@ -379,7 +415,11 @@ class UI:
             )
             return
 
-        levelscr = self.screen_number_to_levelscr[self._screen_number][1]
+        _, levelscr = hero.get_levelscr_from_absscr(
+            self._screen_number,
+            self._level_initial_screens,
+            self._level_screen_count,
+        )
         with self.term.location(0, pos.y):
             # MAGMA
             status = (
@@ -402,7 +442,7 @@ class UI:
             # SIDE GAP
             # When level screen is >= 11, then there is water, and the meaning
             # of "no side gap" changes to "both side gaps"!
-            if levelscr >= 11:
+            if levelscr is not None and levelscr >= 11:
                 status = ("Both  ", "Both  ", "Right ", "Left  ")[
                     self.get_attribute_sidegap(self._screen_data)
                 ]
@@ -661,7 +701,7 @@ class UI:
                 if k.code == self.term.KEY_ENTER:
                     return keys  # finish input
                 elif k.code == self.term.KEY_ESCAPE:
-                    return default # cancel
+                    return default  # cancel
                 elif k.code == self.term.KEY_BACKSPACE:
                     # erase last char
                     if len(keys) > 0:

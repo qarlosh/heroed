@@ -21,9 +21,11 @@ class ScreenDraw:
 
     def draw_terrain(self, draw_upper_area=False):
         """Draw the terrain of the screen"""
-        level, self._levelscr = self.uiobj.screen_number_to_levelscr[
-            self.uiobj.screen_number
-        ]
+        level, self._levelscr = hero.get_levelscr_from_absscr(
+            self.uiobj.screen_number,
+            self.uiobj.level_initial_screens,
+            self.uiobj.level_screen_count,
+        )
 
         self._terrain_color = {
             0: self.uiobj.term.yellow_on_black,
@@ -40,10 +42,13 @@ class ScreenDraw:
     def draw_terrain_up_area(self):
         """Draw the upper area of terrain. This is drawn using prior screen
         data."""
-        if self.uiobj.screen_number in hero.initial_screens():
+        if self.uiobj.screen_number in self.uiobj.level_initial_screens:
             # initial screens are special cases - upper area is a preset
-            row = heroed.ui.terrain.bytes_to_screen_str((0xC0, 0xFE))[:32] + "1" * 32
-        elif self._levelscr > 11:
+            row = (
+                heroed.ui.terrain.bytes_to_screen_str((0xC0, 0xFE))[:32]
+                + "1" * 32
+            )
+        elif self._levelscr is not None and self._levelscr > 11:
             # if levelscr > 11, then prior screen had water below, so this
             # has solid upper area.
             row = heroed.ui.terrain.bytes_to_screen_str((0xFF, 0xFF))
@@ -64,7 +69,7 @@ class ScreenDraw:
                 )
 
         # also draw an arrow in initial screens
-        if self.uiobj.screen_number in hero.initial_screens():
+        if self.uiobj.screen_number in self.uiobj.level_initial_screens:
             self.draw_initial_screen_arrow()
 
     def draw_terrain_mid_area(self):
@@ -85,7 +90,12 @@ class ScreenDraw:
         # *final screens > 11 don't ignore side gaps
         ignore_side_gaps = (
             self.uiobj.screen_number
-            in hero.initial_screens() + hero.final_screens()
+            in self.uiobj.level_initial_screens
+            + hero.final_screens(
+                self.uiobj.level_initial_screens,
+                self.uiobj.level_screen_count,
+            )
+            and self._levelscr is not None
             and self._levelscr < 11
         )
         if not ignore_side_gaps:
@@ -96,13 +106,21 @@ class ScreenDraw:
 
         # When level screen is >= 11, then there is water, and the meaning of
         # "no side gap" changes to "both side gaps"!
-        if self._levelscr >= 11 and side_gap == 0:  # no side gap
+        if (
+            self._levelscr is not None
+            and self._levelscr >= 11
+            and side_gap == 0
+        ):  # no side gap
             row = " " * 8 + row[8:-8] + " " * 8
 
         # Also when level screen is >= 11 and 'alt. right side' is on,
         # there is always left side gap, and the central-right terrain
         # is fixed clear!
-        if self._levelscr >= 11 and side_gap == 1:  # alternative right side
+        if (
+            self._levelscr is not None
+            and self._levelscr >= 11
+            and side_gap == 1
+        ):  # alternative right side
             row = " " * 8 + row[8:]
             row = row[:32] + " " * 6 + row[38:]
 
@@ -146,7 +164,7 @@ class ScreenDraw:
 
         # last row... if levelscr >= 11, then draw water. Else, draw another
         # lower area row.
-        if self._levelscr >= 11:
+        if self._levelscr is not None and self._levelscr >= 11:
             s = self.uiobj.term.cyan_on_white + ACS_CKBOARD * 64
         with self.uiobj.term.location(self.pos.x, 16 + self.pos.y):
             print(self.uiobj.term.acs(s), end="")
@@ -200,7 +218,7 @@ class ScreenDraw:
             self.uiobj.screen_data[hero.BYTE_WALL]
         )
         # initial screens have wall in fixed position 15
-        if self.uiobj.screen_number in hero.initial_screens():
+        if self.uiobj.screen_number in self.uiobj.level_initial_screens:
             self._draw_object(
                 hero.BYTE_WALL,
                 heroed.ui.objects.position_to_screen_pos(15),
@@ -236,7 +254,9 @@ class ScreenDraw:
             )
 
         # Draw miner (only if it is the final screen of level)
-        if self.uiobj.screen_number in hero.final_screens():
+        if self.uiobj.screen_number in hero.final_screens(
+            self.uiobj.level_initial_screens, self.uiobj.level_screen_count
+        ):
             self._draw_miner(pos_wall)
 
     def _draw_object(self, byte, x, y):

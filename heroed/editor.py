@@ -19,7 +19,9 @@ from heroed import hero
 class Editor:
     def __init__(self, hero_ed_rom):
         self.hero_ed_rom = hero_ed_rom
-        self.signals = Signals("selected_screen_changed")
+        self.signals = Signals(
+            "selected_screen_changed", "level_layout_changed"
+        )
         self._prior_screen_data = None
         self._screen_data = None
         self._screen_original_data = None
@@ -27,6 +29,9 @@ class Editor:
         # store each modified screen in self._screens,
         # to permit saving to disk all at once.
         self._modified_screens = {}
+        self._level_layout_modified = False
+        self._read_level_initial_screens()
+        self._read_level_screen_count()
 
     def _read_screen_data(self, screen_number):
         screen_data = bytearray(8)
@@ -35,11 +40,30 @@ class Editor:
             screen_data[n] = ord(self.hero_ed_rom.read(1))
         return screen_data
 
+    def _read_level_initial_screens(self):
+        self.hero_ed_rom.seek(hero.LEVEL_INITIAL_SCREEN_ADDRESS)
+        data = self.hero_ed_rom.read(20)
+        self._level_initial_screens = tuple(data)
+
+    def _read_level_screen_count(self):
+        self.hero_ed_rom.seek(hero.LEVEL_SCREEN_COUNT_ADDRESS)
+        data = self.hero_ed_rom.read(20)
+        self._level_screen_count = tuple(b + 1 for b in data)
+
     def _write_screen_data(self, screen_number, screen_data):
         for n, offset in enumerate(hero.SCREENS_TABLES_ADDRESSES):
             self.hero_ed_rom.seek(offset + screen_number)
             self.hero_ed_rom.write(screen_data[n : n + 1])
-        return screen_data
+
+    def _write_level_initial_screens(self):
+        self.hero_ed_rom.seek(hero.LEVEL_INITIAL_SCREEN_ADDRESS)
+        self.hero_ed_rom.write(bytearray(self._level_initial_screens))
+
+    def _write_level_screen_count(self):
+        self.hero_ed_rom.seek(hero.LEVEL_SCREEN_COUNT_ADDRESS)
+        self.hero_ed_rom.write(
+            bytearray(b - 1 for b in self._level_screen_count)
+        )
 
     def read_title_screen_message(self, message_number):
         """Read message of title screen from file.
@@ -79,13 +103,41 @@ class Editor:
         higher area of the current screen.
         For initial screens, use None.
         """
-        if screen_number in hero.initial_screens():
+        if screen_number in self.level_initial_screens:
             return None
         else:
             return self._get_screen(screen_number - 1)
 
     def _is_screen_data_modified(self):
         return self._screen_data != self._screen_original_data
+
+    @property
+    def level_initial_screens(self):
+        return self._level_initial_screens
+
+    @level_initial_screens.setter
+    def level_initial_screens(self, value):
+        """Set the level_initial_screens tuple"""
+        if self._level_initial_screens == value:
+            return
+
+        self._level_initial_screens = value
+        self._level_layout_modified = True
+        self.signals.emit("level_layout_changed")
+
+    @property
+    def level_screen_count(self):
+        return self._level_screen_count
+
+    @level_screen_count.setter
+    def level_screen_count(self, value):
+        """Set the level_screen_count tuple"""
+        if self._level_screen_count == value:
+            return
+
+        self._level_screen_count = value
+        self._level_layout_modified = True
+        self.signals.emit("level_layout_changed")
 
     @property
     def selected_screen(self):
@@ -138,7 +190,7 @@ class Editor:
 
     def save_modified_screens_to_file(self):
         """Write modified screens data to file and return True.
-        Return False if thereare not any modifications.
+        Return False if there are not any modifications.
         """
         if not self.are_there_modified_screens():
             return False
@@ -146,6 +198,24 @@ class Editor:
             self._write_screen_data(*self._modified_screens.popitem())
         return True
 
+    def save_level_layout_to_file(self):
+        """Write level_initial_screens and level_screen_count info to
+        file and return True.
+        Return False if there are not any modifications.
+        """
+        if not self._level_layout_modified:
+            return False
+        self._write_level_initial_screens()
+        self._write_level_screen_count()
+        self._level_layout_modified = False
+        return True
+
     def are_there_modified_screens(self):
         """Returns True if there are any modified screens"""
         return len(self._modified_screens) > 0
+
+    def is_layout_modified(self):
+        return self._level_layout_modified
+    
+    def are_there_modifications(self):
+        return self.are_there_modified_screens() or self.is_layout_modified()

@@ -42,12 +42,19 @@ def main_editor():
         ui.screen_number = editor.selected_screen
         ui.set_screen_data(editor.screen_data, editor.prior_screen_data)
 
+    def on_level_layout_changed():
+        ui.set_level_layout(
+            editor.level_initial_screens, editor.level_screen_count
+        )
+
     editor.signals.connect(
         "selected_screen_changed", on_selected_screen_changed
     )
+    editor.signals.connect("level_layout_changed", on_level_layout_changed)
 
     # run main loop
     with ui.run():
+        on_level_layout_changed()
         editor.selected_screen = 0
         while True:
             keystroke = ui.process_keystroke()
@@ -56,7 +63,7 @@ def main_editor():
 
             if keystroke.lower() == "q":
                 editor.screen_data = ui.screen_data
-                if editor.are_there_modified_screens():
+                if editor.are_there_modifications():
                     if ui.confirm_message(
                         "There are unsaved changes, really quit?"
                     ):
@@ -69,7 +76,7 @@ def main_editor():
                 level = ui.input_quick_string(keystroke)
                 if level.isnumeric() and int(level) - 1 in range(20):
                     editor.screen_data = ui.screen_data
-                    editor.selected_screen = hero.initial_screens()[
+                    editor.selected_screen = editor.level_initial_screens[
                         int(level) - 1
                     ]
 
@@ -93,6 +100,7 @@ def main_editor():
                 # Save modifications to ROM file
                 editor.screen_data = ui.screen_data
                 editor.save_modified_screens_to_file()
+                editor.save_level_layout_to_file()
                 editor.write_title_screen_message(
                     0, "H.E.R.O.tm%s=HEROED" % ui.mod_name.ljust(15)
                 )
@@ -119,3 +127,71 @@ def main_editor():
                     for char in ui.mod_name
                 )
                 ui.draw_mod_name()
+
+            elif keystroke.lower() == "t":
+                print(hero.final_screens())
+
+            elif keystroke.lower() == "z":
+                # define the current screen as the initial screen of the level.
+                search_screen = editor.selected_screen
+                while search_screen <= 255:
+                    level, _ = hero.get_levelscr_from_absscr(
+                        search_screen,
+                        editor.level_initial_screens,
+                        editor.level_screen_count,
+                    )
+                    # If the current screen is "lost", then search from
+                    # a posterior screen
+                    if level is None:
+                        search_screen += 1
+                    else:
+                        break
+
+                # if found the level, set the initial screen and current length
+                if level is not None:
+                    final_screen = hero.final_screens(
+                        editor.level_initial_screens, editor.level_screen_count
+                    )[level - 1]
+
+                    # set level initial screen
+                    level_initial_screens = list(editor.level_initial_screens)
+                    level_initial_screens[level - 1] = editor.selected_screen
+                    editor.level_initial_screens = level_initial_screens
+
+                    # calculate the new screen count for the level
+                    screen_count = final_screen - editor.selected_screen + 1
+
+                    # set level length
+                    level_screen_count = list(editor.level_screen_count)
+                    level_screen_count[level - 1] = screen_count
+                    editor.level_screen_count = level_screen_count
+
+            elif keystroke.lower() == "x":
+                # define the current screen as the final screen of the level.
+                search_screen = editor.selected_screen
+                while search_screen >= 0:
+                    level, _ = hero.get_levelscr_from_absscr(
+                        search_screen,
+                        editor.level_initial_screens,
+                        editor.level_screen_count,
+                    )
+                    # If the current screen is "lost", then search from
+                    # a previous screen
+                    if level is None:
+                        search_screen -= 1
+                    else:
+                        break
+
+                # if found the level, set the current length
+                if level is not None:
+                    # calculate the new screen count for the level
+                    screen_count = (
+                        editor.selected_screen
+                        - editor.level_initial_screens[level - 1]
+                        + 1
+                    )
+
+                    # set level length
+                    level_screen_count = list(editor.level_screen_count)
+                    level_screen_count[level - 1] = screen_count
+                    editor.level_screen_count = level_screen_count

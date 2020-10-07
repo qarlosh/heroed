@@ -1,7 +1,5 @@
 """Utils related to H.E.R.O. game data or information."""
 
-from functools import lru_cache
-
 # ROM addresses where the 8 tables with screen data start. Each table is
 # 256 bytes long.
 # Each of the 256 screens of the game are defined using 8 bytes, one byte
@@ -25,6 +23,15 @@ TITLE_SCREEN_MESSAGES_ADDRESSES = (
     0x2349,  # ADAPTED BY THE SOFTWORKS
     0x2369,  # COPYRIGHT 1984 ACTIVISION
 )
+
+# pointer to 20 bytes of data, one for each level, indicating the initial
+# screen offset from the total of 256 screens.
+LEVEL_INITIAL_SCREEN_ADDRESS = 0x37CE
+
+# pointer to 20 bytes of data, one for each level, indicating the number of
+# screens of each level, besides the initial screen (i.e. level 2 has 4
+# screens and value of 3).
+LEVEL_SCREEN_COUNT_ADDRESS = 0x37E2
 
 # Some HERO encoded message chars
 #   00-1F:  EMPTY, EMPTY, 0-9, EXCLAM, LEVEL, POWER, PRO, LIVES, BOMBS,
@@ -111,44 +118,51 @@ ENEMY_SNAKE = 3
 OBJECT_HIDDEN_POS = 36
 
 
-def screen_count_per_level():
-    return (
-        2,
-        4,
-        6,
-        8,
-        8,
-        10,
-        12,
-        14,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-        16,
-    )
+ORIGINAL_LEVEL_SCREEN_COUNT = (
+    2,
+    4,
+    6,
+    8,
+    8,
+    10,
+    12,
+    14,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+)
 
-
-@lru_cache
-def initial_screens():
-    first_screens = []
-    offset = 0
-    for screens in screen_count_per_level():
-        first_screens.append(offset)
-        offset += screens
-    return list(first_screens)
-
-
-@lru_cache
-def final_screens():
-    return list(s - 1 for s in (initial_screens()[1:] + [256]))
+ORIGINAL_LEVEL_INITIAL_SCREENS = (
+    0,
+    2,
+    6,
+    12,
+    20,
+    28,
+    38,
+    50,
+    64,
+    80,
+    96,
+    112,
+    128,
+    144,
+    160,
+    176,
+    192,
+    208,
+    224,
+    240,
+)
 
 
 def leftwards_screens():
@@ -264,28 +278,44 @@ def horizontal_screens():
     return sorted(leftwards_screens() + rightwards_screens())
 
 
-def get_levelscr_from_absscr(screen_number):
+def final_screens(level_initial_screens, level_screen_count):
+    return tuple(
+        ini + count - 1
+        for ini, count in zip(level_initial_screens, level_screen_count)
+    )
+
+
+def get_levelscr_from_absscr(
+    screen_number, level_initial_screens, level_screen_count
+):
     """
     Returns a tuple with the level and screen numbers as
     seen in the game, from the absolute screen number (0..255).
+
+      levels  1..20
+      screens 1..16
+
+    if can't locate the screen in a level, then return (None, None)
     """
-    # XXX Should obtain this info from the ROM
-    # 20 levels
-    first_screens = initial_screens()
-    first_screens.append(256)  # level 21 doesn't exist, just helps the loop
-
-    for level, first_screen in enumerate(first_screens):
-        if screen_number < first_screen:
-            break
-
-    return (level, screen_number - first_screens[level - 1] + 1)
+    for level, (initial_screen, screen_count) in enumerate(
+        zip(level_initial_screens, level_screen_count)
+    ):
+        if initial_screen <= screen_number < initial_screen + screen_count:
+            return (level + 1, screen_number - initial_screen + 1)
+    else:
+        return (None, None)
 
 
 def get_level_color(level_number):
-    """returns the color for a specified level. Possible values are:
-    0   yellow
-    1   green
-    2   blue
-    3   grey
+    """returns the color for a specified level (1..20).
+    Possible values are:
+    0   unknown (incorrect level)
+    1   yellow
+    2   green
+    3   blue
+    4   grey
     """
-    return (level_number - 1) % 4
+    if level_number is None or not (1 <= level_number <= 20):
+        return 0
+    else:
+        return (level_number - 1) % 4
