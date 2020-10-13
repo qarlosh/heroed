@@ -1,8 +1,11 @@
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
+import os
 import os.path
+import ctypes
 import shutil
 import argparse
+import contextlib
 
 from heroed.editor import Editor
 from heroed import hero
@@ -11,9 +14,41 @@ from heroed.ui import UI
 DEFAULT_MOD_NAME = "MY FIRST MOD"
 
 
+@contextlib.contextmanager
+def handle_init_exceptions(parser):
+    """Handle exceptions during initialization. If
+    the OS is Windows, show any error in a UI dialog"""
+    try:
+        yield
+    except Exception as err:
+        if os.name == "nt":
+            MessageBox = ctypes.windll.user32.MessageBoxW
+            MessageBox(
+                None,
+                "To use 'heroed' you must specify the 'hero.rom' file. "
+                + "You can drag'n drop the rom file over heroed.exe from the file explorer, "
+                + "or pass it as a parameter from the command line.\n"
+                + "Remember that 'heroed' is a console application!\n\n"
+                + ("Error:\n%s\n\n" % str(err))
+                + ("%s" % usage),
+                "heroed error",
+                0,
+            )
+        raise
+
+
+class ArgumentParserExcept(argparse.ArgumentParser):
+    def error(self, message):
+        """raise exception instead of exiting
+        (3.9: ArgumentParser has exit_on_error...)
+        """
+        raise argparse.ArgumentError(None, message)
+
+
 def main_editor():
-    parser = argparse.ArgumentParser(
-        "heroed", description="HEROED - MSX H.E.R.O. Editor"
+    parser = ArgumentParserExcept(
+        "heroed",
+        description="HEROED - MSX H.E.R.O. Editor",
     )
     parser.add_argument(
         "romfile", metavar="romfile", help="The MSX H.E.R.O. ROM file to edit"
@@ -21,14 +56,14 @@ def main_editor():
     parser.add_argument(
         "-v", "--version", action="version", version=__version__
     )
-    args = parser.parse_args()
 
-    if not os.path.isfile(args.romfile):
-        raise FileNotFoundError('"%s" file not found' % args.romfile)
+    with handle_init_exceptions(parser):
+        args = parser.parse_args()
+        if not os.path.isfile(args.romfile):
+            raise FileNotFoundError('"%s" file not found' % args.romfile)
+        editor = Editor(open(args.romfile, "r+b"))
+        ui = UI()
 
-    editor = Editor(open(args.romfile, "r+b"))
-
-    ui = UI()
     ui.version = __version__
     # fmt: off
     if (message_0 := editor.read_title_screen_message(0)) ==\
@@ -109,10 +144,6 @@ def main_editor():
 
             elif keystroke.lower() == "h":
                 ui.show_help()
-
-            #elif keystroke.lower() == "d":
-            #    ui.show_screen_data = not ui.show_screen_data
-            #    ui.draw_screen_data()
 
             elif keystroke.lower() == "n":
                 # Modify the name of the mod
