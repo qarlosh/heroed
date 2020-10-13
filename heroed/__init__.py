@@ -22,6 +22,7 @@ def handle_init_exceptions(parser):
         yield
     except Exception as err:
         if os.name == "nt":
+            usage = parser.format_usage()
             MessageBox = ctypes.windll.user32.MessageBoxW
             MessageBox(
                 None,
