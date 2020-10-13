@@ -1,4 +1,4 @@
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 import os
 import os.path
@@ -27,8 +27,8 @@ def handle_init_exceptions(parser):
             MessageBox(
                 None,
                 "To use 'heroed' you must specify the 'hero.rom' file. "
-                + "You can drag'n drop the rom file over heroed.exe from the file explorer, "
-                + "or pass it as a parameter from the command line.\n"
+                + "You can drag'n drop the rom file over 'heroed.exe' from the file explorer, "
+                + "or pass it as a parameter from the command line.\n\n"
                 + "Remember that 'heroed' is a console application!\n\n"
                 + ("Error:\n%s\n\n" % str(err))
                 + ("%s" % usage),
